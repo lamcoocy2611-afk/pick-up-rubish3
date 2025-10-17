@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SDGs 性別平權</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: "Noto Sans TC", sans-serif;
+      background: linear-gradient(rgba(255,255,255,0.2), rgba(255,255,255,0.2)),
+                  url('https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1950&q=80') 
+                  no-repeat center center fixed;
+      background-size: cover;
+      overflow: hidden;
+    }
+
+    header {
+      position: fixed;
+      top: 10px;
+      left: 20px;
+      background: rgba(255,255,255,0.85);
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-weight: 800;
+      font-size: 22px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+
+    .scoreboard {
+      position: fixed;
+      top: 10px;
+      right: 20px;
+      background: rgba(255,255,255,0.85);
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-weight: 600;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+
+    .village {
+      position: relative;
+      width: 100%;
+      height: 100vh;
+    }
+
+    .hut {
+      position: absolute;
+      width: 90px;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+
+    .hut:hover {
+      transform: scale(1.1);
+    }
+
+    #questionBox {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: white;
+      border-radius: 12px;
+      padding: 20px 24px;
+      width: 80%;
+      max-width: 420px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+      display: none;
+      z-index: 10;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translate(-50%, -48%); }
+      to { opacity: 1; transform: translate(-50%, -50%); }
+    }
+
+    #questionBox h3 { margin-top: 0; }
+
+    .option {
+      display: block;
+      margin: 8px 0;
+      padding: 8px 12px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      background: #f9f9f9;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .option:hover { background: #dceeff; }
+
+    #resultBox {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: rgba(0,0,0,0.5);
+      visibility: hidden;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    #resultBox.show {
+      visibility: visible;
+      opacity: 1;
+    }
+
+    .result-panel {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      text-align: center;
+      width: 320px;
+      animation: fadeIn 0.4s ease;
+    }
+
+    .result-panel button {
+      margin-top: 16px;
+      padding: 10px 18px;
+      font-size: 16px;
+      border: none;
+      border-radius: 8px;
+      background: #0078ff;
+      color: white;
+      cursor: pointer;
+    }
+
+    .result-panel button:hover {
+      background: #005fd1;
+    }
+  </style>
+</head>
+
+<body>
+  <header>SDGs 性別平權</header>
+  <div class="scoreboard">答對題數：<span id="score">0</span>/10</div>
+  <div class="village" id="village"></div>
+
+  <!-- 題目框 -->
+  <div id="questionBox">
+    <h3 id="questionText">題目文字</h3>
+    <div id="options"></div>
+  </div>
+
+  <!-- 結果畫面 -->
+  <div id="resultBox">
+    <div class="result-panel">
+      <h2 id="resultTitle">任務完成！</h2>
+      <p id="resultText"></p>
+      <button id="restartBtn" style="display:none;">重新挑戰</button>
+      <button id="nextBtn" style="display:none;">前往下一關</button>
+    </div>
+  </div>
+
+  <script>
+    const village = document.getElementById('village');
+    const questionBox = document.getElementById('questionBox');
+    const questionText = document.getElementById('questionText');
+    const optionsBox = document.getElementById('options');
+    const scoreEl = document.getElementById('score');
+    const resultBox = document.getElementById('resultBox');
+    const resultTitle = document.getElementById('resultTitle');
+    const resultText = document.getElementById('resultText');
+    const restartBtn = document.getElementById('restartBtn');
+    const nextBtn = document.getElementById('nextBtn');
+
+    let score = 0;
+    let answered = 0;
+
+    const questions = [
+      { q: "性別平權是什麼意思？", a: ["男女享有平等權利與機會", "男性優於女性", "女性不該工作"], correct: 0 },
+      { q: "哪個行為有助於促進性別平等？", a: ["男性也參與育兒", "限制女性受教育", "只讓男性當主管"], correct: 0 },
+      { q: "哪一天是國際婦女節？", a: ["3月8日", "6月5日", "12月10日"], correct: 0 },
+      { q: "性別刻板印象的例子是？", a: ["女生應該當老師", "每個人都能自由選擇職業", "尊重多元性別"], correct: 0 },
+      { q: "SDGs 第5項目標是什麼？", a: ["性別平等", "環境保護", "終結飢餓"], correct: 0 },
+      { q: "推動性別平權的關鍵是？", a: ["教育與尊重", "性別偏見", "競爭與排斥"], correct: 0 },
+      { q: "哪個政策能促進平等？", a: ["同工同酬", "男性獨享升遷", "女性不得領導"], correct: 0 },
+      { q: "性別平權與哪個價值相關？", a: ["人權與公義", "經濟獨佔", "社會排斥"], correct: 0 },
+      { q: "性別平權的目的是？", a: ["讓每個人有平等機會", "讓男性擁有優勢", "壓抑多元性別"], correct: 0 },
+      { q: "家庭中性別平等的做法是？", a: ["共同分擔家務", "媽媽全做家事", "爸爸不照顧小孩"], correct: 0 }
+    ];
+
+    // Tạo 10 ngôi nhà
+    questions.forEach((q, i) => {
+      const hut = document.createElement('img');
+      hut.src = "https://i.imgur.com/vWZzqGg.png";
+      hut.className = "hut";
+      hut.style.left = Math.random() * 80 + 5 + "%";
+      hut.style.top = Math.random() * 60 + 30 + "%";
+      hut.onclick = () => showQuestion(i, hut);
+      village.appendChild(hut);
+    });
+
+    function showQuestion(index, hut) {
+      const q = questions[index];
+      questionText.textContent = q.q;
+      optionsBox.innerHTML = "";
+      q.a.forEach((opt, idx) => {
+        const btn = document.createElement("div");
+        btn.className = "option";
+        btn.textContent = opt;
+        btn.onclick = () => answerQuestion(index, idx, hut);
+        optionsBox.appendChild(btn);
+      });
+      questionBox.style.display = "block";
+    }
+
+    function answerQuestion(index, ans, hut) {
+      const q = questions[index];
+      if (ans === q.correct) score++;
+      scoreEl.textContent = score;
+      answered++;
+
+      // Ẩn ngay cả câu hỏi và ngôi nhà
+      questionBox.style.display = "none";
+      hut.style.visibility = "hidden";
+
+      if (answered === questions.length) endGame();
+    }
+
+    function endGame() {
+      resultBox.classList.add('show');
+      if (score >= 8) {
+        resultTitle.textContent = "🎉 恭喜通過第一關！";
+        resultText.textContent = `你答對 ${score} 題，表現非常棒！`;
+        nextBtn.style.display = "inline-block";
+      } else {
+        resultTitle.textContent = "💪 再接再厲！";
+        resultText.textContent = `你只答對 ${score} 題，請重新挑戰。`;
+        restartBtn.style.display = "inline-block";
+      }
+    }
+
+    restartBtn.onclick = () => location.reload();
+    nextBtn.onclick = () => location.href = "level2.html";
+  </script>
+</body>
+</html>
