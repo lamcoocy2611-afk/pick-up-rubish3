@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>餐飲業連鎖經營 — Đúng / Sai Quiz</title>
+  <style>
+    :root{--bg:#0f1724;--card:#0b1220;--muted:#9aa6b2;--accent:#22c1c3;--ok:#26a69a;--bad:#ff6b6b}
+    body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial;color:#e6eef3;background:linear-gradient(180deg,#071026, #04111a);padding:20px}
+    header{display:flex;gap:12px;align-items:center;justify-content:space-between;margin-bottom:14px}
+    h1{font-size:20px;margin:0}
+    .btn{background:transparent;border:1px solid rgba(255,255,255,0.08);padding:8px 12px;border-radius:8px;color:#e6eef3;cursor:pointer}
+    .btn.primary{background:var(--accent);color:#042024;border:0}
+    .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));padding:12px;border-radius:12px;margin-bottom:10px;border:1px solid rgba(255,255,255,0.03)}
+    .qnum{font-weight:700;color:var(--accent);margin-right:8px}
+    .opts{display:flex;gap:8px;margin-top:8px}
+    label.opt{flex:1;padding:8px;border-radius:8px;border:1px dashed rgba(255,255,255,0.03);display:flex;align-items:center;justify-content:space-between;cursor:pointer}
+    .small{font-size:13px;color:var(--muted)}
+    .controls{display:flex;gap:8px;align-items:center}
+    .result{padding:10px;border-radius:8px;margin-top:10px}
+    .hidden{display:none}
+    .editor-toggle{display:inline-flex;gap:8px;align-items:center}
+    .editable {font-size:13px;color:#ffd;opacity:0.9}
+    footer{margin-top:18px;color:var(--muted);font-size:13px}
+    .toggleCorrect{background:#ffffff10;border:0;padding:6px;border-radius:6px;cursor:pointer}
+    .correctMark{font-weight:700;color:var(--ok)}
+    .wrongMark{font-weight:700;color:var(--bad)}
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>餐飲業連鎖經營 — Đúng / Sai Quiz</h1>
+      <div class="small">Nguồn đề: tệp bạn upload. (Có chế độ chỉnh đáp án cho giáo viên)</div>
+    </div>
+    <div class="controls">
+      <button id="toggleEdit" class="btn">Edit mode: OFF</button>
+      <button id="saveAnswers" class="btn">Save answers</button>
+      <button id="resetSaved" class="btn">Reset saved</button>
+    </div>
+  </header>
+
+  <main id="quiz"></main>
+
+  <div style="display:flex;gap:10px;margin-top:12px">
+    <button id="check" class="btn primary">Check answers</button>
+    <button id="clear" class="btn">Clear choices</button>
+    <div id="score" class="small" style="align-self:center"></div>
+  </div>
+
+  <footer>
+    <div class="small">Tip: vào <strong>Edit mode</strong> để gõ/click "Set correct" cho từng câu, sau đó Save answers — học sinh chỉ cần trả lời và Check.</div>
+    <div style="margin-top:6px" class="small">Tớ giữ nguyên văn bản câu hỏi từ file gốc để bạn dễ đối chiếu.  [oai_citation:1‡餐飲.docx](sediment://file_00000000e34c72089379c89d423990e7)</div>
+  </footer>
+
+<script>
+/* === DATA: câu hỏi copy thẳng từ file bạn up ===
+   Mình để nguyên định dạng câu hỏi như file, mỗi mục là 1 statement block.
+   Bạn có thể chỉnh text trực tiếp trong code nếu muốn. */
+const questions = [
+1. 餐飲業屬於哪一類口業？\nA.住宿業   B.外食口業   C.批發業,
+2. 2016年餐飲業歸類在下列哪個大類？\nA. 住宿及餐飲業  B.文化創意業  C.批發零售業,
+3. 餐飲連鎖經營的基本精神是什麽？\nA. 不同地點提供不同口品  B.保持一致性  C.毎家店自由經管,
+4. 餐飲連鎖經營的3S原則不包含下列哪一項？\nA.簡單化.  B．標準化.  C.自由化,
+5. 餐飲連鎖經營的核心是？\nA.標準化  B.廣告行銷  C.低成本,
+6. 餐飲業口品具有哪一特性？\nA. 可長期儲存 B. 即時性 C.可批量預製,
+7. 餐飲服務的價主要取決於？\nA. 廚房設備  B.消費者感受  C.食材成本,
+8. 下列哪一項屬於餐飲業管理特性？\nA. 員工流動率高 B.自動化程度高 C.管理簡單,
+9. 餐飲連鎖業常用中央廚房是為了？\nA. 提高標準化 B. 減少設備 C.提升裝潢效果,
+10. 餐飲連鎖經營中「專業化」指的是？\nA.分工明確、專業服務  B. 所有人皆能操作  C.流程簡單,
+11. 傳統行銷通路（CMC）特徵是？\nA. 各自獨立追求利潤  B.統一管理  C.總公司集中控制,
+12. 垂直行銷系統（VMS）是？\nA.彼此獨立  B. 整體化系統  C.分店自由決定,
+13. 公司型垂直行銷系統（Corporate VMS）特徴？\nA.完全獨立 B. 同一公司掌控 C.加盟者自主,
+14. 特許加盟連鎖屬於哪一種VMS？\nA.契約型  B.管理型   C.公司型,
+15. 直營連鎖的所有權屬於？\nA. 加盟者   B.總公司   C.共同擁有,
+16. 加盟連鎖中「自願加盟」的主權屬於？\nA.總公司  B.加盟者  C.消費者,
+17. 「特許加盟連鎖」的經營權通常屬於？\nA. 總公司  B.加盟者  C.股東,
+18. 委託加盟連鎖最早出現於哪一類？\nA.餐廳業 B.便利商店  C.飲料攤販,
+19. 餐飲連鎖發展的第一步是？\nA.建立標準化流程 B. 開始海外拓展 C.找加盟商,
+20. 餐飲連鎖經營可展現品牌形象的要素不包括？\nA.服務  B.裝潢   C.營業時間,
+21. 直營連鎖最大優點為？\nA.成本低   B.品質可控   C.展店速度快,
+22. 直營連鎖最大缺點為？\nA. 投資金額高   B.管理簡單  C.缺乏統一,
+23. 委託加盟連鎖的優點之一是？\nA. 可留住優秀員工   B.完全由加盟者投資   C.無需合約,
+24. 特許加盟的優點是？\nA. 不需品牌   B.展店速度快  C.無需管理,
+25. 自願加盟連鎖的缺點是？\nA. 控制力弱  B.成本高  C.服務差,
+26. 連鎖體系的經營技術通常由誰提供？\nA.總公司  B.政府  C.加盟者,
+27. 餐飲業收入多以何種形式為主？\nA. 刷卡  B.現金  C.匯款,
+28. 速食店多採用哪一種經營模式？\nA.直營  B.特許加盟  C.自願加盟,
+29. 連鎖經營最重視哪一點？\nA.統一與一致性  B.地區差異  C.個人創意,
+30. 總公司授權加盟者使用商標、技術的合約稱為？\nA.特許加盟  B.營運合約  C.委託經管,
+31. 餐飲業的工作特性之一是？\nA. 高自動化  B.勞動密集   C.資本密集,
+32. 下列何者屬於「飲料業」？\nA. 冰果店 B.便當店C. 團膳業,
+33. 「外及團膳承包業」主要服務對象為？\nA.學校、醫院等團體  B.個人   C.商圈顧客,
+34. 餐飲連鎖經營的最終目的是？\nA.建立品牌形象   B.降低勞力   C.增加人事成本,
+35. 連鎖經營中「簡單化」強調什麼？\nA. 減少不必要流程   B. 口品創新  C.增加複雜度,
+36. 「餐食業」不包括哪一項？\nA.披薩外送店   B.餐食攤販   C.漢堡店,
+37. 「服務即時性」屬於哪一特性？\nA.銷售特性   B.服務特性   C.生口特性,
+38. 加盟合約的主要功能是？\nA. 限制加盟者   B. 口明雙方權利義務   C.提高收費,
+39. 加盟體系中「公平分紅制度」主要目的為？\nA. 節省口金  B.激勵員工   C.增加成本,
+40. 餐飲連鎖成功的關鍵之一是？\nA. 一致的管理與訓練   B. 降低價格   C.任意創新
+];
+
+/* key storage structure: {0:true/false, 1:true/false,...}
+   meaning: for question i, if correctIsTrue === true then choosing "Đúng" is correct.
+   By default keys are empty until teacher sets them (edit mode). */
+const STORAGE_KEY = 'caf_chain_tf_answers_v1';
+let editMode = false;
+const quizContainer = document.getElementById('quiz');
+
+function loadSavedAnswers(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  }catch(e){return {}}
+}
+
+function saveAnswersObj(obj){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(obj));
+}
+
+let correctMap = loadSavedAnswers(); // may be empty
+
+function render(){
+  quizContainer.innerHTML = '';
+  questions.forEach((text, idx) => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    const qnum = document.createElement('div');
+    qnum.innerHTML = <span class="qnum">${idx+1}.</span> <span class="editable">${text.replace(/\n/g,'<br>')}</span>;
+    card.appendChild(qnum);
+
+    const opts = document.createElement('div');
+    opts.className = 'opts';
+
+    const trueLabel = document.createElement('label');
+    trueLabel.className = 'opt';
+    trueLabel.innerHTML = <span>Đúng (True)</span><input type="radio" name="q${idx}" value="true">;
+    const falseLabel = document.createElement('label');
+    falseLabel.className = 'opt';
+    falseLabel.innerHTML = <span>Sai (False)</span><input type="radio" name="q${idx}" value="false">;
+
+    opts.appendChild(trueLabel);
+    opts.appendChild(falseLabel);
+    card.appendChild(opts);
+
+    // editor controls
+    const editorRow = document.createElement('div');
+    editorRow.style.marginTop='8px';
+    if(editMode){
+      const btn = document.createElement('button');
+      btn.className='toggleCorrect';
+      const current = correctMap[idx];
+      btn.textContent = (current===true) ? 'Set correct = Đúng' : (current===false) ? 'Set correct = Sai' : 'Set correct = —';
+      btn.onclick = () => {
+        // cycle: undefined -> true -> false -> undefined
+        if(correctMap[idx] === undefined) correctMap[idx] = true;
+        else if(correctMap[idx] === true) correctMap[idx] = false;
+        else delete correctMap[idx];
+        saveAnswersObj(correctMap);
+        render();
+      };
+      editorRow.appendChild(btn);
+      const hint = document.createElement('span');
+      hint.className='small';
+      hint.style.marginLeft='10px';
+      hint.innerHTML = Current: ${ correctMap[idx]===true ? '<span class="correctMark">Đúng</span>' : correctMap[idx]===false ? '<span class="wrongMark">Sai</span>' : '<em>not set</em>' };
+      editorRow.appendChild(hint);
+    }
+
+    card.appendChild(editorRow);
+    quizContainer.appendChild(card);
+  });
+}
+
+document.getElementById('toggleEdit').addEventListener('click', (e)=>{
+  editMode = !editMode;
+  e.target.textContent = Edit mode: ${editMode? 'ON':'OFF'};
+  document.getElementById('saveAnswers').style.display = editMode ? 'inline-block' : 'inline-block';
+  render();
+});
+
+document.getElementById('saveAnswers').addEventListener('click', ()=>{
+  saveAnswersObj(correctMap);
+  alert('Answers saved to browser storage. Học sinh mở lại trang sẽ thấy we use these answers.');
+});
+
+document.getElementById('resetSaved').addEventListener('click', ()=>{
+  if(confirm('Reset saved answers?')) {
+    correctMap = {};
+    saveAnswersObj(correctMap);
+    render();
+    alert('Đã reset.');
+  }
+});
+
+document.getElementById('check').addEventListener('click', ()=>{
+  const total = questions.length;
+  let correctCount = 0;
+  const results = [];
+  for(let i=0;i<total;i++){
+    const radios = document.getElementsByName('q'+i);
+    let chosen = null;
+    for(const r of radios) if(r.checked) chosen = r.value;
+    const key = correctMap[i]; // true => Đúng is correct; false => Sai is correct; undefined => teacher not set
+    if(key === undefined){
+      results.push({i, status:'no-key', chosen});
+      continue;
+    }
+    if(chosen === null){
+      results.push({i, status:'no-answer', chosen});
+      continue;
+    }
+    const isCorrect = ( (chosen === 'true' && key === true) || (chosen === 'false' && key === false) );
+    if(isCorrect) correctCount++;
+    results.push({i, status: isCorrect ? 'ok' : 'wrong', chosen});
+  }
+
+  // show score and per-question feedback
+  const scoreDiv = document.getElementById('score');
+  const numKeySet = Object.keys(correctMap).length;
+  scoreDiv.innerHTML = Score: ${correctCount} / ${ (numKeySet>0)? numKeySet : total };
+  // render feedback boxes
+  const cards = document.querySelectorAll('.card');
+  results.forEach(res => {
+    const card = cards[res.i];
+    // remove old feedback
+    let fb = card.querySelector('.result');
+    if(fb) fb.remove();
+    fb = document.createElement('div');
+    fb.className = 'result';
+    if(res.status === 'no-key'){
+      fb.innerHTML = <div class="small">Chưa có đáp án chuẩn cho câu này — giáo viên chưa set (Edit mode).</div>;
+      fb.style.background = 'rgba(255,255,255,0.02)';
+      card.appendChild(fb);
+    } else if(res.status === 'no-answer'){
+      fb.innerHTML = <div class="small">Bạn chưa chọn Đúng/Sai cho câu này.</div>;
+      fb.style.background = 'rgba(255,255,255,0.02)';
+      card.appendChild(fb);
+    } else if(res.status === 'ok'){
+      fb.innerHTML = <div class="small correctMark">✅ Đúng</div>;
+      fb.style.background = 'rgba(38,166,154,0.08)';
+      card.appendChild(fb);
+    } else {
+      fb.innerHTML = <div class="small wrongMark">❌ Sai</div>;
+      fb.style.background = 'rgba(255,107,107,0.06)';
+      card.appendChild(fb);
+    }
+  });
+
+});
+
+document.getElementById('clear').addEventListener('click', ()=>{
+  document.querySelectorAll('input[type=radio]').forEach(r=> r.checked=false);
+  document.getElementById('score').textContent = '';
+  document.querySelectorAll('.card .result').forEach(n=> n.remove());
+});
+
+// init
+render();
+</script>
+</body>
+</html>
